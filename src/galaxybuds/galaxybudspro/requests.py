@@ -47,6 +47,9 @@ def update_time(time: int, tzoffset: int):
 class MessageCache:
     """Listens for common messages and stores the last per type.
 
+    On construction, the values are all None. When the dispatcher is
+    closed, the values are again set to None.
+
     This class is thread-safe.
     """
 
@@ -64,10 +67,16 @@ class MessageCache:
     def __listen(self, id: int) -> Callable[[], None]:
         self.__data[id] = None
         def setter(frame: frames.Frame):
-            if not frame:
-                return
-
             with self.__cond:
+                if not frame:
+                    # Let the callers know that there is no more data.
+                    if id == 0x61:
+                        self.__merged_extended_status = None
+
+                    self.__data[id] = None
+                    self.__cond.notify_all()
+                    return
+
                 # The earbuds start a connection by bursting extended
                 # status, but then uses smaller updates.
                 if id == 0x60 and self.__merged_extended_status:

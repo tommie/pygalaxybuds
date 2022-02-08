@@ -12,7 +12,8 @@ import argparse
 import dataclasses
 import logging
 import sys
-import time
+import threading
+from typing import Union
 
 from galaxybuds.galaxybudspro import device
 
@@ -66,11 +67,18 @@ def set_touchpad_options(buds: device.Device, options: list[device.TouchpadOptio
 
 def listen_for_touch_and_hold_app(buds: device.Device):
     print('Listening for touch and hold events...', file=sys.stderr)
-    unlisten = buds.listen_for_touch_and_hold_app(lambda option: print('TOUCH', option.name.lower()))
+
+    done = threading.Event()
+    def listener(option: Union[device.TouchpadOption, None]):
+        if option is None:
+            print('Connection lost.', file=sys.stderr)
+            done.set()
+        else:
+            print('TOUCH', option.name.lower())
+
+    unlisten = buds.listen_for_touch_and_hold_app(listener)
     try:
-        # Emulates signal.pause.
-        while True:
-            time.sleep(60)
+        done.wait()
     except KeyboardInterrupt:
         print('Stopped listening.', file=sys.stderr)
     finally:
@@ -86,6 +94,10 @@ def listen_for_status_changes(buds: device.Device):
         while True:
             buds.status.wait_for(lambda: buds.status.latest_merged_extended_status != prev_ext_status)
             ext_status = buds.status.latest_merged_extended_status
+
+            if not ext_status:
+                print('Connection lost.', file=sys.stderr)
+                break
 
             for field_name in [field.name for field in dataclasses.fields(prev_ext_status)] + ['extra_high_ambient']:
                 if field_name.startswith('_'):

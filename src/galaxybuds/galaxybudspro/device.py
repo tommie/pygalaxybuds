@@ -1,7 +1,7 @@
 import contextlib
 import enum
 import threading
-from typing import Callable, Type, TypeVar
+from typing import Callable, Type, TypeVar, Union
 
 import bluetooth
 
@@ -169,18 +169,24 @@ class Device:
                 self.__sock.send(requests.set_touchpad_option(left.value, right.value).encode())
             get()
 
-    def listen_for_touch_and_hold_app(self, func: Callable[[TouchpadOption], None]) -> Callable[[], None]:
+    def listen_for_touch_and_hold_app(self, func: Callable[[Union[TouchpadOption, None]], None]) -> Callable[[], None]:
         """Waits for the user to touch-and-hold to open an app.
 
         The integer passed to the callback is what was set with
         `set_touchpad_option`. 4 is normally hard-coded as
         Spotify. 5-6 are configurable in the app.
 
+        When the device connection is lost, the callback is invoked
+        with None.
+
         Returns a function to cancel the listener.
+
         """
         def listener(frame: frames.Frame):
-            if not frame: return
-            func(TouchpadOption(frame.message.other_option))
+            if not frame:
+                func(None)
+            else:
+                func(TouchpadOption(frame.message.other_option))
 
         self.__dispatcher.listen(0x93, listener)
         return lambda: self.__dispatcher.unlisten(0x93, listener)

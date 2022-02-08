@@ -4,7 +4,7 @@ import dataclasses
 import logging
 import struct
 import threading
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Union
 
 import bluetooth
 
@@ -246,28 +246,37 @@ class FrameDispatcher:
                             LOGGER.exception('FrameDispatcher thread listener failure (ignored)', exc_info=True)
 
                     LOGGER.debug('Dispatched frame header=%r body=%r listeners=%d', frame.header, frame.message or frame.body, len(listeners))
+                except bluetooth.btcommon.BluetoothError:
+                    # Let (at least) ECONNRESET kill the listener.
+                    raise
                 except Exception:
                     LOGGER.exception('FrameDispatcher thread frame failure (ignored)', exc_info=True)
         except BaseException:
             LOGGER.exception('FrameDispatcher thread failed', exc_info=True)
-            raise
         finally:
             with self.__lock:
-                for funcs in self.__listeners.values():
-                    for func in funcs:
-                        func(None)
+                listeners = self.__listeners
+                self.__listeners = {}
 
-    def listen(self, id: int, func: Callable[[Frame], None]) -> None:
+            for funcs in listeners.values():
+                for func in funcs:
+                    func(None)
+
+    def listen(self, id: int, func: Callable[[Union[Frame, None]], None]) -> None:
         """Registers a function to be invoked when the given message ID is seen.
 
+        The callback is involed with None when the receive thread is
+        shut down (from `close()` or error.)
+
         This is idempotent.
+
         """
         with self.__lock:
             if id not in self.__listeners:
                 self.__listeners[id] = set()
             self.__listeners[id].add(func)
 
-    def unlisten(self, id: int, func: Callable[[Frame], None]) -> None:
+    def unlisten(self, id: int, func: Callable[[Union[Frame, None]], None]) -> None:
         """Deregisters a function previously used in listen().
 
         This is idempotent.
