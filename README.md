@@ -55,6 +55,8 @@ controlling Find My Earbuds.
 * To use the app-launching functionality of the touchpad, you need the
   app installed, though this library could be used to emulate that
   too. See `device.Device.listen_for_touch_and_hold_app`.
+* The `device.Device.status` field contains fields with raw
+  `messages.Msg` types. This isn't pretty and should be cleaned up.
 
 ## Fun Facts
 
