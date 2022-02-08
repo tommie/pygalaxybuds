@@ -12,6 +12,21 @@ protocol.
 
 ## Basic Example
 
+Using the command line client:
+
+```shell
+$ galaxybudsctl --address 01:23:45:67:89:ab --set-noise-cancelation off
+KU: SM-R190NZKAEUD, SM-R190NZKAEUD
+Upated noise cancelation mode.
+
+$ galaxybudsctl --address 01:23:45:67:89:ab --listen-for status-changes
+SKU: SM-R190NZKAEUD, SM-R190NZKAEUD
+Listening for status changes...
+STATUS placement_right 2
+STATUS placement_right 3
+^CStopped listening.
+```
+
 ```python
 import pprint
 
@@ -27,9 +42,9 @@ with galaxybudspro.device.Device.open() as buds:
     print('Version: ', end='')
     pprint.pprint(dataclasses.asdict(buds.status.version_info))
 
-    buds.status.wait_for(lambda: buds.status.latest_extended_status)
+    buds.status.wait_for(lambda: buds.status.latest_merged_extended_status)
     print('Status: ', end='')
-    pprint.pprint(dataclasses.asdict(buds.status.latest_extended_status))
+    pprint.pprint(dataclasses.asdict(buds.status.latest_merged_extended_status))
 ```
 
 (In Python >=3.10, `pprint` handles dataclasses, which means

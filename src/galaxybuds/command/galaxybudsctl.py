@@ -162,7 +162,7 @@ def main():
             listen_for_touch_and_hold_app(buds)
         elif args.listen_for == 'status-changes':
             listen_for_status_changes(buds)
-        else:
+        elif args.listen_for:
             raise ValueError('invalid listen_for: {}'.format(args.listen_for))
 
 if __name__ == '__main__':
