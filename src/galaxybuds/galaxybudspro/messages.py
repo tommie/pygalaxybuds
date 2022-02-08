@@ -76,7 +76,7 @@ class MsgExtendedStatusUpdated(Msg):
     voice_wake_up: bool
     _device_color: int # 2 shorts
     voice_wake_up_language: int
-    seamless_connection: bool # negated
+    _seamless_connection: bool # negated
     fmm_revision: int
     noise_controls_off: bool # bit 0
     noise_controls_ambient: bool # bit 1
@@ -101,7 +101,7 @@ class MsgExtendedStatusUpdated(Msg):
     customize_ambient_volume_right: int # lower nibble, rev>=8
     ambient_sound_tone: int  # rev>=8
     side_tone: bool # rev>=9
-    call_path_control: bool # negated, if in_ear_detection feature (rev>=10 ?)
+    _call_path_control: bool # negated, if in_ear_detection feature (rev>=10 ?)
 
     @property
     def battery_case(self):
@@ -116,6 +116,10 @@ class MsgExtendedStatusUpdated(Msg):
         return self._device_color[0]
 
     @property
+    def seamless_connection(self):
+        return not self._seamless_connection
+
+    @property
     def extra_high_ambient(self):
         if self.revision < 3:
             return self._extra_high_ambient1
@@ -128,6 +132,10 @@ class MsgExtendedStatusUpdated(Msg):
         if self._detect_conversations_duration < 2:
             return 1
         return self._detect_conversations_duration
+
+    @property
+    def call_path_control(self):
+        return not self._call_path_control
 
     @classmethod
     def parse(cls, data: bytes):
@@ -236,6 +244,7 @@ class MsgExtendedStatusUpdated(Msg):
         if i != len(data):
             raise ValueError('unable to parse the MsgExtendedStatusUpdated, expected length {}, got {}'.format(i, len(data)))
 
+        args = [arg if field.type == int else bool(arg) for arg, field in zip(args, dataclasses.fields(cls))]
         return cls(*args)
 
 @dataclasses.dataclass
