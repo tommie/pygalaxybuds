@@ -14,7 +14,7 @@ protocol.
 
 Using the command line client:
 
-```shell
+```console
 $ galaxybudsctl --address 01:23:45:67:89:ab --set-noise-cancelation off
 KU: SM-R190NZKAEUD, SM-R190NZKAEUD
 Upated noise cancelation mode.
@@ -27,14 +27,14 @@ STATUS placement_right 3
 ^CStopped listening.
 ```
 
+Using the library:
+
 ```python
 import pprint
 
-import galaxybudspro.device
+from galaxybuds.galaxybudspro import device
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-
-with galaxybudspro.device.Device.open() as buds:
+with device.Device.open() as buds:
     print('SKU:', buds.get_debug_sku())
     print('Serial:', buds.get_debug_serial_number())
 
