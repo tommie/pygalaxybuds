@@ -41,18 +41,20 @@ See `device.py` for implemented high-level methods, file changing
 noise cancellation settings, changing touchpad functionality and
 controlling Find My Earbuds.
 
-## Issues
+## Known Issues
 
 * If the library cannot find any device, pass the earbuds' Bluetooth
   address, like `open('00:11:22:33:44:55')`. This seems to be an issue
   with PyBluez on at least Ubuntu 21.10.
-* Sometimes, the background receive thread bombs out by closing the
+* Sometimes, the background receive thread bombs out when closing the
   socket, instead of gracefully shutting down.
 * As with all request-response formats, there's a chance the response
-  is missed, or not generated, and a request hangs forever.
+  is missed, or not generated, and a request hangs forever. The
+  `frames.FrameDispatcher.oneshot` supports timeouts, but it's not
+  been plumbed through to `Device`.
 * To use the app-launching functionality of the touchpad, you need the
   app installed, though this library could be used to emulate that
-  too.
+  too. See `device.Device.listen_for_touch_and_hold_app`.
 
 ## Fun Facts
 
