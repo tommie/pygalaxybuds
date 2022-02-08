@@ -1,6 +1,7 @@
-from collections.abc import Callable
+import dataclasses
 import struct
 import threading
+from typing import Callable
 
 from . import frames, messages
 
@@ -53,6 +54,7 @@ class MessageCache:
         self.__dispatcher = dispatcher
         self.__data = {}
         self.__unlistens = []
+        self.__merged_extended_status = None
 
         for id in [0x40, 0x41, 0x60, 0x61, 0x63, 0x77, 0x9C, 0xB9]:
             self.__unlistens.append(self.__listen(id))
@@ -66,6 +68,15 @@ class MessageCache:
                 return
 
             with self.__cond:
+                # The earbuds start a connection by bursting extended
+                # status, but then uses smaller updates.
+                if id == 0x60 and self.__merged_extended_status:
+                    fields = dataclasses.asdict(frame.message)
+                    fields.pop('revision')
+                    self.__merged_extended_status = dataclasses.replace(self.__merged_extended_status, **fields)
+                elif id == 0x61:
+                    self.__merged_extended_status = dataclasses.replace(frame.message)
+
                 self.__data[id] = frame.message
                 self.__cond.notify_all()
 
@@ -96,7 +107,7 @@ class MessageCache:
 
     @property
     def latest_metering_report(self):
-        with self.__cond: return self.__data[0x40]
+        with self.__cond: return self.__data[0x41]
 
     @property
     def latest_status(self):
@@ -105,6 +116,16 @@ class MessageCache:
     @property
     def latest_extended_status(self):
         with self.__cond: return self.__data[0x61]
+
+    @property
+    def latest_merged_extended_status(self) -> messages.MsgExtendedStatusUpdated:
+        """The latest_extended_status property merged with other messages.
+
+        The earbuds start a connection by bursting extended status,
+        but then uses smaller updates. Prefer this over the raw
+        latest_extended_status.
+        """
+        with self.__cond: return self.__merged_extended_status
 
     @property
     def version_info(self):

@@ -5,6 +5,7 @@ Examples:
   PYTHONPATH=src python3 -m galaxybuds.command.galaxybudsctl --print all
   PYTHONPATH=src python3 -m galaxybuds.command.galaxybudsctl --set-noise-cancelation off
   PYTHONPATH=src python3 -m galaxybuds.command.galaxybudsctl --print serial --set-touchpad-options spotify,app5
+  PYTHONPATH=src python3 -m galaxybuds.command.galaxybudsctl --print status --listen-for status-changes
 """
 
 import argparse
@@ -75,24 +76,53 @@ def listen_for_touch_and_hold_app(buds: device.Device):
     finally:
         unlisten()
 
+def listen_for_status_changes(buds: device.Device):
+    try:
+        buds.status.wait_for(lambda: buds.status.latest_merged_extended_status)
+        prev_ext_status = buds.status.latest_merged_extended_status
+
+        print('Listening for status changes...', file=sys.stderr)
+
+        while True:
+            buds.status.wait_for(lambda: buds.status.latest_merged_extended_status != prev_ext_status)
+            ext_status = buds.status.latest_merged_extended_status
+
+            for field_name in [field.name for field in dataclasses.fields(prev_ext_status)] + ['extra_high_ambient']:
+                if field_name.startswith('_'):
+                    field_name = field_name.lstrip('_')
+                    if not hasattr(ext_status, field_name):
+                        continue
+
+                value = getattr(ext_status, field_name)
+
+                if value == getattr(prev_ext_status, field_name):
+                    continue
+
+                print('STATUS', field_name, value)
+
+            prev_ext_status = ext_status
+    except KeyboardInterrupt:
+        print('Stopped listening.', file=sys.stderr)
+
 def main():
     parser = argparse.ArgumentParser(description='Control Galaxy Buds Pro earbuds over Bluetooth.')
-    parser.add_argument('--address', metavar='XX:XX:XX:XX:XX:XX', type=str, help='the Bluetooth address to connect to')
-    parser.add_argument('--log-level', default='warning', type=str, help='the logging level',
+    parser.add_argument('--address', metavar='XX:XX:XX:XX:XX:XX', help='the Bluetooth address to connect to')
+    parser.add_argument('--log-level', default='warning', help='the logging level',
                         choices=['debug', 'info', 'warning', 'error'])
-    parser.add_argument('--print', default=['sku'], action='append', type=str, help='comma-separated list of information to print',
+    parser.add_argument('--print', default=['sku'], action='append', help='comma-separated list of information to print',
                         choices=['all'] + ALL_PRINTABLE)
     parser.add_argument('--find-my-earbuds', nargs='?', const='both', help='enable a loud chirp in the buds for 30 seconds',
                         choices=['both', 'left', 'right'])
-    parser.add_argument('--set-equalizer', type=str, help='sets the sound equalizer mode',
+    parser.add_argument('--set-equalizer', help='sets the sound equalizer mode',
                         choices=sorted(v.name.lower().replace('_', '-') for v in device.EqualizerType))
-    parser.add_argument('--set-noise-cancelation', type=str, help='sets the noise cancelation mode',
+    parser.add_argument('--set-noise-cancelation', help='sets the noise cancelation mode',
                         choices=sorted(v.name.lower().replace('_', '-') for v in device.NoiseControls))
-    parser.add_argument('--set-touchpad', type=str, help='sets whether the touchpad is locked',
+    parser.add_argument('--set-touchpad', help='sets whether the touchpad is locked',
                         choices=['locked', 'unlocked'])
-    parser.add_argument('--set-touchpad-options', type=str, help='sets the touch-and-hold functionality of each earbud',
+    parser.add_argument('--set-touchpad-options', help='sets the touch-and-hold functionality of each earbud',
                         metavar='LEFT[,RIGHT] {{{}}}'.format(','.join(sorted(v.name.lower() for v in device.TouchpadOption))))
-    parser.add_argument('--listen-for-touch-and-hold-app', action='store_true', help='listens for touch-and-hold events and prints them to stdout')
+    parser.add_argument('--listen-for', help='listens for touch-and-hold events and prints them to stdout',
+                        choices=['touch-and-hold-app', 'status-changes'])
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stderr, level=args.log_level.upper())
@@ -128,8 +158,12 @@ def main():
                 print('Expected exactly two touchpad options, but got {}'.format(','.join(args.set_touchpad_options)), file=sys.stderr)
             set_touchpad_options(buds, args.set_touchpad_options)
 
-        if args.listen_for_touch_and_hold_app:
+        if args.listen_for == 'touch-and-hold-app':
             listen_for_touch_and_hold_app(buds)
+        elif args.listen_for == 'status-changes':
+            listen_for_status_changes(buds)
+        else:
+            raise ValueError('invalid listen_for: {}'.format(args.listen_for))
 
 if __name__ == '__main__':
     main()
