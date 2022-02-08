@@ -16,7 +16,7 @@ Using the command line client:
 
 ```console
 $ galaxybudsctl --address 01:23:45:67:89:ab --set-noise-cancelation off
-KU: SM-R190NZKAEUD, SM-R190NZKAEUD
+SKU: SM-R190NZKAEUD, SM-R190NZKAEUD
 Upated noise cancelation mode.
 
 $ galaxybudsctl --address 01:23:45:67:89:ab --listen-for status-changes
