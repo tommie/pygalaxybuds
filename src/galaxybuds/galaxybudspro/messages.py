@@ -21,19 +21,19 @@ class MsgStringPair(Msg):
 @dataclasses.dataclass
 class MsgStatusUpdated(Msg):
     revision: int # always zero?
-    batteryLeft: int
-    batteryRight: int
+    battery_left: int
+    battery_right: int
     coupled: bool
-    primaryEarbud: int
-    placementLeft: int
-    placementRight: int # lower nibble
-    batteryCase_: int
+    primary_earbud: int
+    placement_left: int
+    placement_right: int # lower nibble
+    _battery_case: int
 
     @property
-    def batteryCase(self):
-        if self.batteryCase_ == 101:
+    def battery_case(self):
+        if self._battery_case == 101:
             return -1
-        return self.batteryCase_
+        return self._battery_case
 
     @classmethod
     def parse(cls, data: bytes):
@@ -59,75 +59,75 @@ class MsgStatusUpdated(Msg):
 @dataclasses.dataclass
 class MsgExtendedStatusUpdated(Msg):
     revision: int
-    earType: int
-    batteryLeft: int
-    batteryRight: int
+    ear_type: int
+    battery_left: int
+    battery_right: int
     coupled: bool
-    primaryEarbud: int
-    placementLeft: int  # 1: wearing, 2: table, 3: case
-    placementRight: int # lower nibble
-    batteryCase_: int
-    adjustSoundSync: bool
-    equalizerType: int
-    touchpadConfig: bool
-    touchpadOptionLeft: int
-    touchpadOptionRight: int # lower nibble
-    noiseControls: int
-    voiceWakeUp: bool
-    deviceColor_: int # 2 shorts
-    voiceWakeUpLanguage: int
-    seamlessConnection: bool # negated
-    fmmRevision: int
-    noiseControlsOff: bool # bit 0
-    noiseControlsAmbient: bool # bit 1
-    noiseControlsAnc: bool # bit 2
-    leftNoiseControlsOff: bool # bit 4, rev>=8
-    leftNoiseControlsAmbient: bool # bit 5, rev>=8
-    leftNoiseControlsAnc: bool # bit 6, rev>=8
-    extraHighAmbient1: bool # rev<3
-    speakSeamlessly: bool # rev>=3
-    ambientSoundLevel: int
-    noiseReductionLevel: int
-    autoSwitchAudioOutput: bool
-    detectConversations: bool
-    detectConversationsDuration_: int
-    spatialAudio: bool # rev>=2
-    hearingEnhancements: int # rev>=5
-    extraHighAmbient2: bool # rev>=6
-    outsideDoubleTap: bool # rev>=7
-    noiseControlsWithOneEarbud: bool # rev>=8
-    customizeAmbientSoundOn: bool # rev>=8
-    customizeAmbientVolumeLeft: int # rev>=8
-    customizeAmbientVolumeRight: int # lower nibble, rev>=8
-    ambientSoundTone: int  # rev>=8
-    sideTone: bool # rev>=9
-    callPathControl: bool # negated, if in_ear_detection feature (rev>=10 ?)
+    primary_earbud: int
+    placement_left: int  # 1: wearing, 2: table, 3: case
+    placement_right: int # lower nibble
+    _battery_case: int
+    adjust_sound_sync: bool
+    equalizer_type: int
+    touchpad_config: bool
+    touchpad_option_left: int
+    touchpad_option_right: int # lower nibble
+    noise_controls: int
+    voice_wake_up: bool
+    _device_color: int # 2 shorts
+    voice_wake_up_language: int
+    seamless_connection: bool # negated
+    fmm_revision: int
+    noise_controls_off: bool # bit 0
+    noise_controls_ambient: bool # bit 1
+    noise_controls_anc: bool # bit 2
+    left_noise_controls_off: bool # bit 4, rev>=8
+    left_noise_controls_ambient: bool # bit 5, rev>=8
+    left_noise_controls_anc: bool # bit 6, rev>=8
+    _extra_high_ambient1: bool # rev<3
+    speak_seamlessly: bool # rev>=3
+    ambient_sound_level: int
+    noise_reduction_level: int
+    auto_switch_audio_output: bool
+    detect_conversations: bool
+    _detect_conversations_duration: int
+    spatial_audio: bool # rev>=2
+    hearing_enhancements: int # rev>=5
+    _extra_high_ambient2: bool # rev>=6
+    outside_double_tap: bool # rev>=7
+    noise_controls_with_one_earbud: bool # rev>=8
+    customize_ambient_sound_on: bool # rev>=8
+    customize_ambient_volume_left: int # rev>=8
+    customize_ambient_volume_right: int # lower nibble, rev>=8
+    ambient_sound_tone: int  # rev>=8
+    side_tone: bool # rev>=9
+    call_path_control: bool # negated, if in_ear_detection feature (rev>=10 ?)
 
     @property
-    def batteryCase(self):
-        if self.batteryCase_ == 101:
+    def battery_case(self):
+        if self._battery_case == 101:
             return -1
-        return self.batteryCase_
+        return self._battery_case
 
     @property
-    def deviceColor(self):
-        if (self.coupled and self.deviceColor_[1]) or (not self.coupled and not self.primaryEarbud):
-            return self.deviceColor_[1]
-        return self.deviceColor_[0]
+    def device_color(self):
+        if (self.coupled and self._device_color[1]) or (not self.coupled and not self.primary_earbud):
+            return self._device_color[1]
+        return self._device_color[0]
 
     @property
-    def extraHighAmbient(self):
+    def extra_high_ambient(self):
         if self.revision < 3:
-            return self.extraHighAmbient1
+            return self._extra_high_ambient1
         if self.revision >= 6:
-            return self.extraHighAmbient2
+            return self._extra_high_ambient2
         return 0
 
     @property
-    def detectConversationsDuration(self):
-        if self.detectConversationsDuration_ < 2:
+    def detect_conversations_duration(self):
+        if self._detect_conversations_duration < 2:
             return 1
-        return detectConversationsDuration_
+        return self._detect_conversations_duration
 
     @classmethod
     def parse(cls, data: bytes):
